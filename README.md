@@ -14,3 +14,7 @@ HostIP="101.200.83.130"
 tcpdump -i eth1 -nn host ${HostIP} and ! port 22 and ! icmp -c 2000  >>  ${CapFile}
 ```
 如果满足需求请不要擅自删除某个特定文件，目前这个脚本只适用于测试, 但已经对 wiki.shileizcc.com 网站进行绑定。
+对特定 IP 的可以设置白名单, 请写入 neglect_list.txt 文件一行一个 IP 地址，不支持其他格式：
+```
+8.8.8.8
+```
