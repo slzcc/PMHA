@@ -1,4 +1,8 @@
 #!/bin/bash
+
+workDir="/root"
+project="PMHA"
+
 HostIP="101.200.83.130"
 
 CapFile="/tmp/`date +%F:%H:%M.cap`"
@@ -10,8 +14,8 @@ cat ${CapFile} | grep '\[S\]'  | awk '{print $3}'| awk -F. 'OFS="."{$NF="";print
 
 cat ${ReIPFile} | while read line  ; do
   if [[ `echo $line | awk '{print $1}'` -ge 20 ]]; then
-    echo $line | awk '{print $2}' >> .new_ip_list.txt;
+    echo $line | awk '{print $2}' >> ${workDir}/${project}/.new_ip_list.txt;
   fi;
 done
 rm -rf ${CapFile}
-cat .new_ip_list.txt | sort | uniq > black_list.txt
+cat ${workDir}/${project}/.new_ip_list.txt | sort | uniq > ${workDir}/${project}/black_list.txt
