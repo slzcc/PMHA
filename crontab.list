@@ -1,0 +1,2 @@
+*/10 * * * * /root/PMHA/malice_access.sh
+*/10 * * * * /root/PMHA/main.sh stop && /root/PMHA/main.sh start
