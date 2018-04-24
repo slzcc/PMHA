@@ -1,10 +1,11 @@
 #!/bin/bash
 
-if [[ ! -f .black_list.txt ]];then cat black_list.txt > .black_list.txt;fi
-if [[ ! -f .neglect_list.txt ]];then cat neglect_list.txt > .neglect_list.txt;fi
 
 workDir="/root"
 project="PMHA"
+
+if [[ ! -f ${workDir}/${project}/.black_list.txt ]];then cat ${workDir}/${project}/black_list.txt > ${workDir}/${project}/.black_list.txt;fi
+if [[ ! -f ${workDir}/${project}/.neglect_list.txt ]];then cat ${workDir}/${project}/neglect_list.txt > ${workDir}/${project}/.neglect_list.txt;fi
 
 whiteList=`cat ${workDir}/${project}/neglect_list.txt | sort | uniq`
 old_whiteList=`cat ${workDir}/${project}/.neglect_list.txt | sort | uniq`
@@ -34,32 +35,32 @@ if [ "$1" == "start" ]; then
     bash $0 stop
     rm -rf ~/.pmha_run
   fi
-  if [[ `md5sum black_list.txt | awk '{print $1}'` != `md5sum .black_list.txt | awk '{print $1}'` ]] ; then
+  if [[ `md5sum ${workDir}/${project}/black_list.txt | awk '{print $1}'` != `md5sum ${workDir}/${project}/.black_list.txt | awk '{print $1}'` ]] ; then
 
 #    $IPT -t filter -D INPUT -p tcp -s ${OldBlackIPList} --sport ${AllPorts} --dport ${AllPorts} -j DROP
     $IPT -t filter -A INPUT -p tcp -s ${BlackIPList} --sport ${AllPorts} --dport ${AllPorts} -j DROP
 
-    cat black_list.txt > .black_list.txt
+    cat ${workDir}/${project}/black_list.txt > ${workDir}/${project}/.black_list.txt
 
   else
 
     $IPT -t filter -A INPUT -p tcp -s ${BlackIPList} --sport ${AllPorts} --dport ${AllPorts} -j DROP
 
-    cat black_list.txt > .black_list.txt
+    cat ${workDir}/${project}/black_list.txt > ${workDir}/${project}/.black_list.txt
     touch ~/.pmha_run
 
   fi
 
-  if [[ `md5sum neglect_list.txt | awk '{print $1}'` != `md5sum .neglect_list.txt | awk '{print $1}'` ]] ; then
+  if [[ `md5sum ${workDir}/${project}/neglect_list.txt | awk '{print $1}'` != `md5sum ${workDir}/${project}/.neglect_list.txt | awk '{print $1}'` ]] ; then
     
 #    $IPT -t filter -D INPUT -p tcp -s ${OldWhiteIPList} --sport ${AllPorts} --dport ${AllPorts} -j ACCEPT
     $IPT -t filter -A INPUT -p tcp -s ${WhiteIPList} --sport ${AllPorts} --dport ${AllPorts} -j ACCEPT
-    cat neglect_list.txt > .neglect_list.txt
+    cat ${workDir}/${project}/neglect_list.txt > ${workDir}/${project}/.neglect_list.txt
 
   else
 
     $IPT -t filter -A INPUT -p tcp -s ${WhiteIPList} --sport ${AllPorts} --dport ${AllPorts} -j ACCEPT
-    cat neglect_list.txt > .neglect_list.txt
+    cat ${workDir}/${project}/neglect_list.txt > ${workDir}/${project}/.neglect_list.txt
     touch ~/.pmha_run
 
   fi
