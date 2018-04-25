@@ -17,5 +17,5 @@ cat ${ReIPFile} | while read line  ; do
     echo $line | awk '{print $2}' >> ${workDir}/${project}/.new_ip_list.txt;
   fi;
 done
-rm -rf ${CapFile}
+rm -rf ${CapFile} ${ReIPFile}
 cat ${workDir}/${project}/.new_ip_list.txt | sort | uniq > ${workDir}/${project}/black_list.txt
