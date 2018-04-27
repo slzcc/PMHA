@@ -35,6 +35,21 @@ if [ "$1" == "start" ]; then
     bash $0 stop
     rm -rf ~/.pmha_run
   fi
+
+  if [[ `md5sum ${workDir}/${project}/neglect_list.txt | awk '{print $1}'` != `md5sum ${workDir}/${project}/.neglect_list.txt | awk '{print $1}'` ]] ; then
+    
+#    $IPT -t filter -D INPUT -p tcp -s ${OldWhiteIPList} --sport ${AllPorts} --dport ${AllPorts} -j ACCEPT
+    $IPT -t filter -A INPUT -p tcp -s ${WhiteIPList} --sport ${AllPorts} --dport ${AllPorts} -j ACCEPT
+    cat ${workDir}/${project}/neglect_list.txt > ${workDir}/${project}/.neglect_list.txt
+
+  else
+
+    $IPT -t filter -A INPUT -p tcp -s ${WhiteIPList} --sport ${AllPorts} --dport ${AllPorts} -j ACCEPT
+    cat ${workDir}/${project}/neglect_list.txt > ${workDir}/${project}/.neglect_list.txt
+    touch ~/.pmha_run
+
+  fi
+
   if [[ `md5sum ${workDir}/${project}/black_list.txt | awk '{print $1}'` != `md5sum ${workDir}/${project}/.black_list.txt | awk '{print $1}'` ]] ; then
 
 #    $IPT -t filter -D INPUT -p tcp -s ${OldBlackIPList} --sport ${AllPorts} --dport ${AllPorts} -j DROP
@@ -47,20 +62,6 @@ if [ "$1" == "start" ]; then
     $IPT -t filter -A INPUT -p tcp -s ${BlackIPList} --sport ${AllPorts} --dport ${AllPorts} -j DROP
 
     cat ${workDir}/${project}/black_list.txt > ${workDir}/${project}/.black_list.txt
-    touch ~/.pmha_run
-
-  fi
-
-  if [[ `md5sum ${workDir}/${project}/neglect_list.txt | awk '{print $1}'` != `md5sum ${workDir}/${project}/.neglect_list.txt | awk '{print $1}'` ]] ; then
-    
-#    $IPT -t filter -D INPUT -p tcp -s ${OldWhiteIPList} --sport ${AllPorts} --dport ${AllPorts} -j ACCEPT
-    $IPT -t filter -A INPUT -p tcp -s ${WhiteIPList} --sport ${AllPorts} --dport ${AllPorts} -j ACCEPT
-    cat ${workDir}/${project}/neglect_list.txt > ${workDir}/${project}/.neglect_list.txt
-
-  else
-
-    $IPT -t filter -A INPUT -p tcp -s ${WhiteIPList} --sport ${AllPorts} --dport ${AllPorts} -j ACCEPT
-    cat ${workDir}/${project}/neglect_list.txt > ${workDir}/${project}/.neglect_list.txt
     touch ~/.pmha_run
 
   fi
