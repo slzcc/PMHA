@@ -1,2 +1,4 @@
-*/10 * * * * /root/PMHA/malice_access.sh
+*/8 * * * * /root/PMHA/main.sh stop
+*/9 * * * * /bin/cat /root/PMHA/black_list.txt | sort | uniq > /tmp/.black_list.txt && mv /tmp/.black_list.txt /root/PMHA/.black_list.txt
+*/3 * * * * /root/PMHA/malice_access.sh
 */10 * * * * /root/PMHA/main.sh start

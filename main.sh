@@ -1,75 +1,53 @@
 #!/bin/bash
-
+set -e
 
 workDir="/root"
 project="PMHA"
-
-if [[ ! -f ${workDir}/${project}/.black_list.txt ]];then cat ${workDir}/${project}/black_list.txt > ${workDir}/${project}/.black_list.txt;fi
-if [[ ! -f ${workDir}/${project}/.neglect_list.txt ]];then cat ${workDir}/${project}/neglect_list.txt > ${workDir}/${project}/.neglect_list.txt;fi
-
+IPS="/sbin/ipset"
+IPSET_NAME="drop_all_request_black"
+IPSET_NAME_WHITE="drop_all_request_white"
 whiteList=`cat ${workDir}/${project}/neglect_list.txt | sort | uniq`
-old_whiteList=`cat ${workDir}/${project}/.neglect_list.txt | sort | uniq`
-
 blackList=`cat ${workDir}/${project}/black_list.txt | sort | uniq`
-old_blackList=`cat ${workDir}/${project}/.black_list.txt | sort | uniq`
-
-BlackIPList=""
-WhiteIPList=""
-OldBlackIPList=""
-OldWhiteIPList=""
-
-AllPorts="0:65535"
-IPT="/sbin/iptables"
-suffix="(,$)"
-
-for i in ${blackList}; do BlackIPList+="$i",;done && [[ "$BlackIPList" =~ $suffix ]] && BlackIPList=${BlackIPList%?}
-
-for j in ${whiteList}; do WhiteIPList+="$j",;done && [[ "$WhiteIPList" =~ $suffix ]] && WhiteIPList=${WhiteIPList%?}
-
-for k in ${old_blackList}; do OldBlackIPList+="$k",;done && [[ "$OldBlackIPList" =~ $suffix ]] && OldBlackIPList=${OldBlackIPList%?}
-
-for o in ${old_whiteList}; do OldWhiteIPList+="$o",;done && [[ "$OldWhiteIPList" =~ $suffix ]] && OldWhiteIPList=${OldWhiteIPList%?}
 
 if [ "$1" == "start" ]; then
-  if [[ -f ~/.pmha_run ]]; then
-    bash $0 stop
-    rm -rf ~/.pmha_run
-  fi
+	# check ipset rules
+	isIPSET_RULE=`ipset list | grep "${IPSET_NAME}" | wc -l`
+	if [[ $isIPSET_RULE != 1 ]]; then
+		$IPS create ${IPSET_NAME} hash:ip
+	fi
 
-  if [[ `md5sum ${workDir}/${project}/neglect_list.txt | awk '{print $1}'` != `md5sum ${workDir}/${project}/.neglect_list.txt | awk '{print $1}'` ]] ; then
-    
-#    $IPT -t filter -D INPUT -p tcp -s ${OldWhiteIPList} --sport ${AllPorts} --dport ${AllPorts} -j ACCEPT
-    $IPT -t filter -A INPUT -p tcp -s ${WhiteIPList} --sport ${AllPorts} --dport ${AllPorts} -j ACCEPT
-    cat ${workDir}/${project}/neglect_list.txt > ${workDir}/${project}/.neglect_list.txt
+	isIPSET_RULE=`ipset list | grep "${IPSET_NAME_WHITE}" | wc -l`
+	if [[ $isIPSET_RULE != 1 ]]; then
+		$IPS create ${IPSET_NAME_WHITE} hash:ip
+	fi
 
-  else
+	# check iptable rules black
+	isIPTABLE_RULE=`iptables -t filter -nvL |grep "${IPSET_NAME_WHITE}" | wc -l`
+	if [[ $isIPTABLE_RULE != 1 ]]; then
+		iptables -I INPUT -m set --match-set ${IPSET_NAME_WHITE} src -j ACCEPT
+	fi 
+	for j in ${whiteList}; do $IPS add ${IPSET_NAME_WHITE} $j;done
 
-    $IPT -t filter -A INPUT -p tcp -s ${WhiteIPList} --sport ${AllPorts} --dport ${AllPorts} -j ACCEPT
-    cat ${workDir}/${project}/neglect_list.txt > ${workDir}/${project}/.neglect_list.txt
-    touch ~/.pmha_run
-
-  fi
-
-  if [[ `md5sum ${workDir}/${project}/black_list.txt | awk '{print $1}'` != `md5sum ${workDir}/${project}/.black_list.txt | awk '{print $1}'` ]] ; then
-
-#    $IPT -t filter -D INPUT -p tcp -s ${OldBlackIPList} --sport ${AllPorts} --dport ${AllPorts} -j DROP
-    $IPT -t filter -A INPUT -p tcp -s ${BlackIPList} --sport ${AllPorts} --dport ${AllPorts} -j DROP
-
-    cat ${workDir}/${project}/black_list.txt > ${workDir}/${project}/.black_list.txt
-
-  else
-
-    $IPT -t filter -A INPUT -p tcp -s ${BlackIPList} --sport ${AllPorts} --dport ${AllPorts} -j DROP
-
-    cat ${workDir}/${project}/black_list.txt > ${workDir}/${project}/.black_list.txt
-    touch ~/.pmha_run
-
-  fi
-
-elif [ "$1" == "stop" ]; then
-
-  $IPT -t filter -D INPUT -p tcp -s ${OldWhiteIPList} --sport ${AllPorts} --dport ${AllPorts} -j ACCEPT
-  $IPT -t filter -D INPUT -p tcp -s ${OldBlackIPList} --sport ${AllPorts} --dport ${AllPorts} -j DROP
-  rm -rf ~/.pmha_run
-
+	# check iptable rules black
+	isIPTABLE_RULE=`iptables -t filter -nvL |grep "${IPSET_NAME}" | wc -l`
+	if [[ $isIPTABLE_RULE != 1 ]]; then
+		iptables -I INPUT -m set --match-set ${IPSET_NAME} src -j DROP
+	fi 
+	for i in ${blackList}; do $IPS add ${IPSET_NAME} $i;done
 fi
+
+if [ "$1" == "stop" ]; then
+	# delete iptable rules
+	iptables -D INPUT -m set --match-set ${IPSET_NAME_WHITE} src -j ACCEPT
+	iptables -D INPUT -m set --match-set ${IPSET_NAME} src -j DROP
+	
+	# delete ipset rules objects
+	ipset flush ${IPSET_NAME}
+	ipset flush ${IPSET_NAME_WHITE}
+
+	# delete ipset rules
+	ipset destroy ${IPSET_NAME}
+	ipset destroy ${IPSET_NAME_WHITE}
+fi
+
+[[ `echo $?` == "0" ]] && echo $1 Configure IPSet!
